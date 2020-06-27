@@ -50,11 +50,7 @@ unsigned char buf4[1];
 unsigned char buf5[1];//z
 
 int state;
-int prev_state;
-int prev_prev_state;
 int msg;
-int prev_msg;
-short prev_x, prev_y;
 
 //init wiringPi
 void init_i2c(int sensor){
@@ -136,9 +132,6 @@ void accel()
 	else if(state == 0){
 		msg = 0;
 	}
-	
-	prev_x = x;
-	prev_y = y;
 }
 
 int main(int argc, char* argv[]){
@@ -183,23 +176,26 @@ int main(int argc, char* argv[]){
 
 	// init socket
 	if (argc == 1){
-    	nport = PORT;
-	} else if (argc == 3) {
-	addrserv =argv[1];
-    	nport = atoi(argv[2]);
-	} else {
-    	printf("Usage: %s <server address>\n", argv[0]);
-    	printf("   or\nUsage: %s <server address <port>>\n", argv[0]);
-    	exit(0);
+    		nport = PORT;
+	}
+	else if (argc == 3) {
+		addrserv =argv[1];
+		nport = atoi(argv[2]);
+	}
+	else {
+		printf("Usage: %s <server address>\n", argv[0]);
+		printf("   or\nUsage: %s <server address <port>>\n", argv[0]);
+		exit(0);
 	}
     
 	cli_sock = socket(PF_INET, SOCK_STREAM, 0);
 
 	if (cli_sock == -1){
-    	perror("socket() error!\n");
-    	exit(0);
-	}else{
-    	printf("socket success\n" );
+		perror("socket() error!\n");
+		exit(0);
+	}
+	else{
+    		printf("socket success\n" );
 	}
 
 	struct in_addr inp;
@@ -214,16 +210,17 @@ int main(int argc, char* argv[]){
     
 
 	if (connect(cli_sock, (struct sockaddr*)&serv_addr,sizeof(struct sockaddr)) == -1){
-    	perror("connect() error\n");
+    		perror("connect() error\n");
 	}
 	
 	if((pid = fork()) == -1){//error
-    	perror("fork() error\n");
-    	exit(0);
+		perror("fork() error\n");
+		exit(0);
 	}
 	else if(pid ==0) {//child
 		int flag = 0;
-    	while(1){
+		
+    		while(1){
 			accel();
 
 			int start = msg;
@@ -260,23 +257,23 @@ int main(int argc, char* argv[]){
 
 			delay(500);
 			nbytes = strlen(buf);
-    		write(cli_sock, buf, MAXLINE);
+    			write(cli_sock, buf, MAXLINE);
 
-    		if(strncmp(buf, "exit", 4) ==0) {
-        		puts("exit program");
-        		exit(0);
-    		}
-        }
+			if(strncmp(buf, "exit", 4) ==0) {
+				puts("exit program");
+				exit(0);
+			}
+       		}
 	}
 	else if (pid > 0){//parent
     	while(1){
-        		if((nbytes = read(cli_sock, buf, MAXLINE)) < 0){
+        	if((nbytes = read(cli_sock, buf, MAXLINE)) < 0){
             		perror("read() error\n");
             		exit(0);
-        		}
-        		if(strncmp(buf, "exit",4) == 0)
-            	exit(0);
-    	}
+        	}
+        	if(strncmp(buf, "exit",4) == 0)
+            		exit(0);
+    		}
 	}
 	
 	bcm2835_i2c_end();
